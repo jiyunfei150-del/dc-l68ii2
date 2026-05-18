@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>财务后台系统架构图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0d1b2a 0%, #1a2d4a 50%, #0d1b2a 100%);
+    min-height: 100vh;
+    padding: 32px 24px 48px;
+    color: #e0e8f4;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 14px;
+    color: #7a9cc0;
+    margin-bottom: 24px;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+  }
+  .stat-item {
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: #4db8ff;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: #7a9cc0;
+    margin-top: 2px;
+  }
+
+  /* ===== LAYER WRAPPER ===== */
+  .arch-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ===== LAYER ===== */
+  .layer {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 0;
+  }
+
+  .layer-label {
+    width: 88px;
+    min-width: 88px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 8px;
+    border-radius: 12px 0 0 12px;
+    writing-mode: horizontal-tb;
+    position: relative;
+    z-index: 2;
+  }
+  .layer-label .icon {
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+  .layer-label .name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .layer-label .sub {
+    font-size: 11px;
+    opacity: 0.75;
+    margin-top: 4px;
+    text-align: center;
+  }
+
+  .layer-content {
+    flex: 1;
+    padding: 18px 20px;
+    border-radius: 0 12px 12px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  /* ===== ARROW BETWEEN LAYERS ===== */
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    position: relative;
+  }
+  .arrow-line {
+    width: 2px;
+    height: 36px;
+    background: linear-gradient(to bottom, rgba(77,184,255,0.6), rgba(77,184,255,0.1));
+    position: absolute;
+    left: calc(88px / 2 - 1px);
+  }
+  .arrow-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 16px;
+    background: rgba(77,184,255,0.08);
+    border: 1px solid rgba(77,184,255,0.2);
+    border-radius: 20px;
+    font-size: 12px;
+    color: #4db8ff;
+    margin-left: 100px;
+  }
+  .arrow-main span { font-size: 14px; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.25);
+    transform: translateY(-2px);
+  }
+  .card .card-icon { font-size: 16px; }
+  .card .card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e0e8f4;
+    white-space: nowrap;
+  }
+  .card .card-desc {
+    font-size: 11px;
+    color: #7a9cc0;
+    white-space: nowrap;
+  }
+
+  /* TAG badges */
+  .tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 3px;
+  }
+  .tag-blue   { background: rgba(77,184,255,0.15); color: #4db8ff; }
+  .tag-green  { background: rgba(82,196,120,0.15); color: #52c478; }
+  .tag-orange { background: rgba(255,163,72,0.15); color: #ffa348; }
+  .tag-purple { background: rgba(167,119,252,0.15); color: #a777fc; }
+  .tag-red    { background: rgba(255,100,100,0.15); color: #ff6464; }
+
+  /* ===== LAYER COLOR THEMES ===== */
+  .layer-data   .layer-label { background: linear-gradient(135deg, #1a3a5e, #0f2840); border-left: 3px solid #4db8ff; }
+  .layer-data   .layer-content { background: rgba(77,184,255,0.04); border: 1px solid rgba(77,184,255,0.12); border-left: none; }
+
+  .layer-collect .layer-label { background: linear-gradient(135deg, #1a3d2e, #0f2820); border-left: 3px solid #52c478; }
+  .layer-collect .layer-content { background: rgba(82,196,120,0.04); border: 1px solid rgba(82,196,120,0.12); border-left: none; }
+
+  .layer-process .layer-label { background: linear-gradient(135deg, #3a2b1a, #281e0e); border-left: 3px solid #ffa348; }
+  .layer-process .layer-content { background: rgba(255,163,72,0.04); border: 1px solid rgba(255,163,72,0.12); border-left: none; }
+
+  .layer-service .layer-label { background: linear-gradient(135deg, #2d1a3d, #1e0f28); border-left: 3px solid #a777fc; }
+  .layer-service .layer-content { background: rgba(167,119,252,0.04); border: 1px solid rgba(167,119,252,0.12); border-left: none; }
+
+  .layer-perm   .layer-label { background: linear-gradient(135deg, #3d1a1a, #280f0f); border-left: 3px solid #ff6464; }
+  .layer-perm   .layer-content { background: rgba(255,100,100,0.04); border: 1px solid rgba(255,100,100,0.12); border-left: none; }
+
+  .layer-app    .layer-label { background: linear-gradient(135deg, #1a2e3d, #0f1e28); border-left: 3px solid #38bdf8; }
+  .layer-app    .layer-content { background: rgba(56,189,248,0.04); border: 1px solid rgba(56,189,248,0.12); border-left: none; }
+
+  /* ===== GROUP INSIDE LAYER ===== */
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed rgba(255,255,255,0.1);
+    flex: 1;
+    min-width: 200px;
+  }
+  .group-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #7a9cc0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .group-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Permission detail box */
+  .perm-detail {
+    flex: 1;
+    min-width: 280px;
+    background: rgba(255,100,100,0.05);
+    border: 1px solid rgba(255,100,100,0.15);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .perm-detail-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff6464;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .perm-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .perm-row .perm-role {
+    min-width: 90px;
+    font-weight: 600;
+    color: #e0e8f4;
+  }
+  .perm-row .perm-scope {
+    color: #7a9cc0;
+    line-height: 1.5;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 12px;
+    color: #3a5070;
+  }
+
+  /* ===== LEGEND ===== */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #7a9cc0;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>💼 财务后台系统架构</h1>
+  <p>Financial Backend System Architecture · 分层架构视图</p>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-num">8+</div>
+      <div class="stat-label">数据来源</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">6</div>
+      <div class="stat-label">架构层次</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">RBAC</div>
+      <div class="stat-label">权限模型</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">行级</div>
+      <div class="stat-label">数据隔离</div>
+    </div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4db8ff"></div>数据层</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#52c478"></div>接入层</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ffa348"></div>处理层</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a777fc"></div>服务层</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff6464"></div>权限控制</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>应用层</div>
+</div>
+
+<div class="arch-container">
+
+  <!-- ======== LAYER 1: DATA SOURCE ======== -->
+  <div class="layer layer-data">
+    <div class="layer-label">
+      <div class="icon">🗄️</div>
+      <div class="name">数据层</div>
+      <div class="sub">Data Source</div>
+    </div>
+    <div class="layer-content">
+      <div class="group">
+        <div class="group-title">📦 业务系统数据</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">🏗️</div>
+            <div class="card-name">项目数仓 / 数据库</div>
+            <div class="card-desc">各项目组业务数据</div>
+            <span class="tag tag-blue">DataX 同步</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">📣</div>
+            <div class="card-name">广分数据</div>
+            <div class="card-desc">广告分成结算数据</div>
+            <span class="tag tag-blue">API / ETL</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">🎯</div>
+            <div class="card-name">投放数据</div>
+            <div class="card-desc">广告投放消耗数据</div>
+            <span class="tag tag-blue">API / ETL</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">💳</div>
+            <div class="card-name">充值中心</div>
+            <div class="card-desc">用户充值流水</div>
+            <span class="tag tag-blue">API</span>
+          </div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-title">🔗 外部 & 运营数据</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">🍎</div>
+            <div class="card-name">Apple / Google</div>
+            <div class="card-desc">IAP 结算报告</div>
+            <span class="tag tag-green">官方 API</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">🛠️</div>
+            <div class="card-name">运维数据</div>
+            <div class="card-desc">服务器成本 / 资源</div>
+            <span class="tag tag-green">Zabbix / API</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">📒</div>
+            <div class="card-name">金蝶 ERP</div>
+            <div class="card-desc">财务凭证 / 总账</div>
+            <span class="tag tag-orange">集成接口</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">📋</div>
+            <div class="card-name">BPM 系统</div>
+            <div class="card-desc">审批流程 / 单据</div>
+            <span class="tag tag-orange">Webhook</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow-line"></div>
+    <div class="arrow-main"><span>⬇</span> DataX / API 定时调度 · Hermes 同步 · Webhook 推送</div>
+  </div>
+
+  <!-- ======== LAYER 2: COLLECTION ======== -->
+  <div class="layer layer-collect">
+    <div class="layer-label">
+      <div class="icon">🔄</div>
+      <div class="name">接入层</div>
+      <div class="sub">Ingestion</div>
+    </div>
+    <div class="layer-content">
+      <div class="card">
+        <div class="card-icon">🚀</div>
+        <div class="card-name">DataX 调度</div>
+        <div class="card-desc">项目数仓 / DB → 数据仓库</div>
+        <span class="tag tag-green">批量 T+1</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔁</div>
+        <div class="card-name">Hermes 同步引擎</div>
+        <div class="card-desc">实时 / 增量同步</div>
+        <span class="tag tag-green">准实时</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-name">外部 API 拉取</div>
+        <div class="card-desc">Apple / Google / 广告平台</div>
+        <span class="tag tag-green">定时轮询</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">📤</div>
+        <div class="card-name">Webhook 推送</div>
+        <div class="card-desc">BPM 审批事件 / 回调</div>
+        <span class="tag tag-green">事件驱动</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">📁</div>
+        <div class="card-name">人工导入</div>
+        <div class="card-desc">Excel / CSV 人工上传</div>
+        <span class="tag tag-orange">手动</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow-line"></div>
+    <div class="arrow-main"><span>⬇</span> 写入数据仓库 · 统一存储</div>
+  </div>
+
+  <!-- ======== LAYER 3: PROCESS ======== -->
+  <div class="layer layer-process">
+    <div class="layer-label">
+      <div class="icon">⚙️</div>
+      <div class="name">处理层</div>
+      <div class="sub">Processing</div>
+    </div>
+    <div class="layer-content">
+      <div class="group">
+        <div class="group-title">🏛️ 数据仓库 (Apache Doris)</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">🧱</div>
+            <div class="card-name">ODS 原始层</div>
+            <div class="card-desc">贴源存储，保留原始数据</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🔧</div>
+            <div class="card-name">DWD 明细层</div>
+            <div class="card-desc">数据清洗 / 标准化</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">📐</div>
+            <div class="card-name">DWS 汇总层</div>
+            <div class="card-desc">主题聚合 / 指标计算</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🎁</div>
+            <div class="card-name">ADS 应用层</div>
+            <div class="card-desc">结算报表 / 宽表</div>
+          </div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-title">🧮 结算计算引擎</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">🌍</div>
+            <div class="card-name">海外渠道结算</div>
+            <div class="card-desc">Apple / Google IAP 核算</div>
+            <span class="tag tag-orange">汇率转换</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">📊</div>
+            <div class="card-name">广告结算</div>
+            <div class="card-desc">投放消耗对账 / 分成</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🏠</div>
+            <div class="card-name">国内渠道结算</div>
+            <div class="card-desc">第三方支付 / 联运</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">📝</div>
+            <div class="card-name">暂估 / 实际</div>
+            <div class="card-desc">暂估入账 → 实际核销</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow-line"></div>
+    <div class="arrow-main"><span>⬇</span> RESTful API · 权限过滤 · 数据下推</div>
+  </div>
+
+  <!-- ======== LAYER 4: PERMISSION ======== -->
+  <div class="layer layer-perm">
+    <div class="layer-label">
+      <div class="icon">🔐</div>
+      <div class="name">权限层</div>
+      <div class="sub">Access Control</div>
+    </div>
+    <div class="layer-content">
+      <div class="group" style="min-width:240px">
+        <div class="group-title">🎭 RBAC 角色权限</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">👑</div>
+            <div class="card-name">超级管理员</div>
+            <div class="card-desc">所有模块 / 全公司数据</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">⚙️</div>
+            <div class="card-name">财务信息化</div>
+            <div class="card-desc">权限配置 / 系统维护</div>
+            <span class="tag tag-red">审批权限申请</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">📋</div>
+            <div class="card-name">财务管理层</div>
+            <div class="card-desc">跨公司汇总报表</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">👤</div>
+            <div class="card-name">业务财务</div>
+            <div class="card-desc">所属公司 + 项目数据</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">👥</div>
+            <div class="card-name">项目成员</div>
+            <div class="card-desc">本项目数据（只读）</div>
+          </div>
+        </div>
+      </div>
+      <div class="perm-detail">
+        <div class="perm-detail-title">📏 数据行级隔离规则</div>
+        <div class="perm-row">
+          <div class="perm-role">🌐 海外内购结算</div>
+          <div class="perm-scope">按 公司 + 项目 + 项目组 三级隔离；财务管理层可见全部</div>
+        </div>
+        <div class="perm-row">
+          <div class="perm-role">📣 广告收入结算</div>
+          <div class="perm-scope">按 广告账户归属公司隔离；投放人员只见自己账户</div>
+        </div>
+        <div class="perm-row">
+          <div class="perm-role">🏠 国内第三方结算</div>
+          <div class="perm-scope">按 渠道归属项目组隔离</div>
+        </div>
+        <div class="perm-row">
+          <div class="perm-role">🛠️ 运维成本</div>
+          <div class="perm-scope">仅财务信息化 + 管理层可见全量；项目组见本组资源</div>
+        </div>
+        <div class="perm-row" style="margin-bottom:0">
+          <div class="perm-role">🔑 权限申请流程</div>
+          <div class="perm-scope">用户提交申请 → BPM 审批 → 财务信息化在后台配置角色</div>
+        </div>
+      </div>
+      <div class="group" style="min-width:200px;max-width:220px">
+        <div class="group-title">🛡️ 安全机制</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">🔑</div>
+            <div class="card-name">单点登录 SSO</div>
+            <div class="card-desc">统一身份认证</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">📝</div>
+            <div class="card-name">操作审计日志</div>
+            <div class="card-desc">全量操作记录</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">⏱️</div>
+            <div class="card-name">Token 有效期</div>
+            <div class="card-desc">Session 超时自动失效</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow-line"></div>
+    <div class="arrow-main"><span>⬇</span> 鉴权通过 · 过滤数据行 · 下发结果</div>
+  </div>
+
+  <!-- ======== LAYER 5: SERVICE ======== -->
+  <div class="layer layer-service">
+    <div class="layer-label">
+      <div class="icon">🧩</div>
+      <div class="name">服务层</div>
+      <div class="sub">Service</div>
+    </div>
+    <div class="layer-content">
+      <div class="card">
+        <div class="card-icon">⚖️</div>
+        <div class="card-name">结算服务</div>
+        <div class="card-desc">暂估 / 实际 / 核销</div>
+        <span class="tag tag-purple">核心模块</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">💰</div>
+        <div class="card-name">成本服务</div>
+        <div class="card-desc">成本分摊 / 费用管理</div>
+        <span class="tag tag-purple">核心模块</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-name">报表服务</div>
+        <div class="card-desc">财务报表 / 管报</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏦</div>
+        <div class="card-name">银行流水</div>
+        <div class="card-desc">对账 / 流水管理</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📜</div>
+        <div class="card-name">凭证服务</div>
+        <div class="card-desc">票号 / 凭证管理</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-name">汇率服务</div>
+        <div class="card-desc">多币种换算</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔔</div>
+        <div class="card-name">告警通知</div>
+        <div class="card-desc">异常 / 超阈值推送</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <div class="card-name">主数据服务</div>
+        <div class="card-desc">公司 / 项目 / 渠道字典</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow-line"></div>
+    <div class="arrow-main"><span>⬇</span> 前端渲染 · 用户交互</div>
+  </div>
+
+  <!-- ======== LAYER 6: APP ======== -->
+  <div class="layer layer-app">
+    <div class="layer-label">
+      <div class="icon">🖥️</div>
+      <div class="name">应用层</div>
+      <div class="sub">Application</div>
+    </div>
+    <div class="layer-content">
+      <div class="group">
+        <div class="group-title">💼 财务操作台</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">🌍</div>
+            <div class="card-name">海外内购结算</div>
+            <div class="card-desc">各国支付方式结算</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">📣</div>
+            <div class="card-name">广告收入结算</div>
+            <div class="card-desc">广告平台对账</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🏠</div>
+            <div class="card-name">国内第三方结算</div>
+            <div class="card-desc">微信 / 支付宝 / 联运</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🚚</div>
+            <div class="card-name">国内联运结算</div>
+            <div class="card-desc">联运渠道分成</div>
+          </div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-title">📈 报表 & 管控</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">📊</div>
+            <div class="card-name">财务报表</div>
+            <div class="card-desc">P&L / 资产负债</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">💸</div>
+            <div class="card-name">成本费用</div>
+            <div class="card-desc">成本中心分析</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🏛️</div>
+            <div class="card-name">税务模块</div>
+            <div class="card-desc">税率 / 申报</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🔄</div>
+            <div class="card-name">toko对账</div>
+            <div class="card-desc">toko 渠道核账</div>
+          </div>
+        </div>
+      </div>
+      <div class="group" style="max-width:240px">
+        <div class="group-title">⚙️ 系统管理</div>
+        <div class="group-cards">
+          <div class="card">
+            <div class="card-icon">👥</div>
+            <div class="card-name">系统管理</div>
+            <div class="card-desc">用户 / 角色 / 菜单配置</div>
+            <span class="tag tag-red">需权限申请</span>
+          </div>
+          <div class="card">
+            <div class="card-icon">🔧</div>
+            <div class="card-name">主数据维护</div>
+            <div class="card-desc">配置维护 / 字典管理</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🛠️</div>
+            <div class="card-name">开发工具</div>
+            <div class="card-desc">调试 / 数据修复</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  Generated by 小D · DataClaw Financial Architecture · 2026
+</div>
+
+</body>
+</html>
